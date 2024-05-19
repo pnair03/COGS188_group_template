@@ -59,6 +59,10 @@ mode_schedule = [
     ('scatter', 5),
     ('chase', float('inf'))    
 ]
+curr_mode_idx = 0
+mode_timer = 0
+curr_mode = mode_schedule[curr_mode_idx][0]
+timer = 0
 
 #Starting Positions
 lives = 3
