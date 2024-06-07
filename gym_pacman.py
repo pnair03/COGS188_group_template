@@ -9,7 +9,6 @@ from collections import deque, namedtuple
 import matplotlib.pyplot as plt
 import torch.nn.functional as F
 import os
-from tqdm import tqdm
 
 # Define the MsPacman environment with render_mode
 env = gym.make('ALE/MsPacman-v5', render_mode='rgb_array')
