@@ -9,6 +9,7 @@ from collections import deque, namedtuple
 import matplotlib.pyplot as plt
 import torch.nn.functional as F
 import os
+from tqdm import tqdm
 
 # Define the MsPacman environment with render_mode
 env = gym.make('ALE/MsPacman-v5', render_mode='rgb_array')
@@ -154,10 +155,11 @@ action_size = env.action_space.n
 
 agent = DQNAgent(state_size=state_size, action_size=action_size)
 
-def dqn(n_episodes=100, max_t=1000, eps_start=1.0, eps_end=0.01, eps_decay=0.995):
+def dqn(n_episodes=500, max_t=1000, eps_start=1.0, eps_end=0.01, eps_decay=0.995):
     scores = []
     scores_window = deque(maxlen=100)
     eps = eps_start
+    moving_avg_scores = []
 
     for i_episode in range(1, n_episodes+1):
         state, _ = env.reset()  # Unpack the state from the reset method
@@ -181,32 +183,37 @@ def dqn(n_episodes=100, max_t=1000, eps_start=1.0, eps_end=0.01, eps_decay=0.995
                 else:
                     done = False
             if done:
+                print(f"Took {t} steps until Agent ran out of lives")
                 break
 
         scores_window.append(score)
+        moving_avg_scores.append(np.mean(scores_window))
         scores.append(score)
         eps = max(eps_end, eps_decay*eps)
         print(f'Episode {i_episode}, Avg Score: {np.mean(scores_window)}')
-        if i_episode % 100 == 0:
-            print(f'\rEpisode {i_episode}\tAverage Score: {np.mean(scores_window)}')
+        #termination early condition
         if np.mean(scores_window) >= 1000.0:
             print(f'\nEnvironment solved in {i_episode} episodes!\tAverage Score: {np.mean(scores_window)}')
             torch.save(agent.qnetwork_local.state_dict(), 'checkpoint.pth')
             break
-    return scores, steps
 
-scores = dqn()
+    torch.save(agent.qnetwork_local.state_dict(), 'checkpoint.pth')
+    return scores, moving_avg_scores
 
-def plot_scores(scores):
+scores, moving_avg_scores = dqn()
+
+def plot_scores(scores, moving_avg_scores):
     fig = plt.figure()
     ax = fig.add_subplot(111)
-    plt.plot(np.arange(len(scores)), scores)
+    ax.plot(np.arange(len(scores)), scores, label='Scores', color='blue')
+    ax.plot(np.arange(len(moving_avg_scores)), moving_avg_scores, label='Moving Average Scores', color='red')
+    ax.legend()
     plt.ylabel('Score')
     plt.xlabel('Episode #')
     plt.show()
     fig.savefig('training_scores.png')
 
-plot_scores(scores)
+plot_scores(scores, moving_avg_scores)
 
 def create_video(agent, env, filename="mspacman.mp4"):
     video_env = gym.wrappers.RecordVideo(env, './video', episode_trigger=lambda x: True, video_length=0)
